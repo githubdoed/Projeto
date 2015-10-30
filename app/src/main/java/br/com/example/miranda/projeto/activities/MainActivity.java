@@ -10,18 +10,22 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 import br.com.example.miranda.projeto.R;
 import br.com.example.miranda.projeto.adapters.RouteAdapter;
+import br.com.example.miranda.projeto.services.pojos.Body;
+import br.com.example.miranda.projeto.services.pojos.PojoRoute;
+import br.com.example.miranda.projeto.services.pojos.Route;
+import br.com.example.miranda.projeto.services.RouteDeserializer;
 import br.com.example.miranda.projeto.services.RouteListener;
-import br.com.example.miranda.projeto.services.RouteResult;
 import br.com.example.miranda.projeto.services.ServiceGenerator;
-import br.com.example.miranda.projeto.services.Stop;
+import br.com.example.miranda.projeto.services.pojos.Params;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
@@ -42,59 +46,41 @@ public class MainActivity extends AppCompatActivity {
         buscar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Body body = new Body(new Params("%" + localizacao.getText().toString() + "%", null));
 
-                final List<RouteResult> listRouteResult = retornaRotas(localizacao.getText().toString());
-                ListView listView = (ListView) findViewById(R.id.listView);
-                RouteAdapter adapter = new RouteAdapter(MainActivity.this, listRouteResult);
-                listView.setAdapter(adapter);
-
-                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                ServiceGenerator.createService(RouteListener.class).getRoutesByStopName(body, new Callback<JsonElement>() {
                     @Override
-                    public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
-                        RouteResult routeResult = listRouteResult.get(position);
-                        carregaEstradasEhorarios(routeResult);
+                    public void success(JsonElement jsonElement, Response response) {
+                        Gson gson = new GsonBuilder().registerTypeAdapter(PojoRoute.class, new RouteDeserializer()).create();
+                        final List<Route> routes = gson.fromJson(jsonElement, PojoRoute.class).getRoutes();
+                        ListView listView = (ListView) findViewById(R.id.listView);
+                        if (!routes.isEmpty()) {
+                            RouteAdapter adapter = new RouteAdapter(MainActivity.this, routes);
+                            listView.setAdapter(adapter);
+                            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                @Override
+                                public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
+                                    Route route = routes.get(position);
+                                    Intent intent = new Intent(getApplicationContext(), DetailsActivity.class);
+                                    Bundle bundle = new Bundle();
+                                    bundle.putSerializable("route", (Serializable) route);
+                                    intent.putExtras(bundle);
+                                    startActivity(intent);
+                                }
+                            });
+                        } else {
+                            listView.setAdapter(null);
+                            Toast.makeText(getApplicationContext(), "Rotas não encontradas!", Toast.LENGTH_LONG).show();
+                        }
+                    }
 
-                        Intent intent = new Intent(getApplicationContext(), DetailsActivity.class);
-                        Bundle bundle = new Bundle();
-                        bundle.putSerializable("routeResult", (Serializable) routeResult);
-                        intent.putExtras(bundle);
-
-                        startActivity(intent);
+                    @Override
+                    public void failure(RetrofitError error) {
+                        Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
-
             }
         });
     }
-
-
-    private List<RouteResult> retornaRotas(String localizacao) {
-        List<RouteResult> listRouteResult = new ArrayList<RouteResult>();
-
-        RouteListener routeListener = ServiceGenerator.createService(RouteListener.class);
-        Stop stop = new Stop("%" + localizacao + "%");
-        routeListener.getRoutesByStopName(stop, new Callback<JsonElement>() {
-            @Override
-            public void success(JsonElement jsonElement, Response response) {
-                Toast.makeText(getApplicationContext(), jsonElement.toString(), Toast.LENGTH_LONG).show();
-                // carregar listRouteResult com as rotas retornadas
-            }
-            @Override
-            public void failure(RetrofitError error) {
-                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
-
-
-        listRouteResult.add(new RouteResult("1", "Pantanal"));
-        return listRouteResult;
-    }
-
-
-    private void carregaEstradasEhorarios(RouteResult routeResult) {
-        // carregar estradas e horários
-
-    }
-
 
 }

@@ -10,26 +10,26 @@ import android.widget.TextView;
 import java.util.List;
 
 import br.com.example.miranda.projeto.R;
-import br.com.example.miranda.projeto.services.RouteResult;
+import br.com.example.miranda.projeto.services.pojos.Route;
 
 public class RouteAdapter extends BaseAdapter {
 
     private LayoutInflater inflater;
-    private List<RouteResult> listRouteResult;
+    private List<Route> routes;
 
-    public RouteAdapter(Context context, List<RouteResult> listRouteResult) {
-        this.listRouteResult = listRouteResult;
+    public RouteAdapter(Context context, List<Route> routes) {
+        this.routes = routes;
         inflater = LayoutInflater.from(context);
     }
 
     @Override
     public int getCount() {
-        return listRouteResult.size();
+        return routes.size();
     }
 
     @Override
     public Object getItem(int position) {
-        return listRouteResult.get(position);
+        return routes.get(position);
     }
 
     @Override
@@ -41,7 +41,7 @@ public class RouteAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         convertView = inflater.inflate(R.layout.adp_routes, parent, false);
         TextView route = (TextView) convertView.findViewById(R.id.textView2);
-        route.setText(listRouteResult.get(position).getNmRoute());
+        route.setText(routes.get(position).getLongName());
         return convertView;
     }
 }

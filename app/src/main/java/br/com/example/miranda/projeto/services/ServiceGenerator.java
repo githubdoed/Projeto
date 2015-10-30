@@ -1,6 +1,7 @@
 package br.com.example.miranda.projeto.services;
 
 import android.util.Base64;
+import android.util.Log;
 
 import com.squareup.okhttp.OkHttpClient;
 
@@ -27,6 +28,12 @@ public class ServiceGenerator {
                 public void intercept(RequestFacade request) {
                     request.addHeader("Authorization", basic);
                     request.addHeader("X-AppGlu-Environment", "staging");
+                }
+            });
+
+            builder.setLogLevel(RestAdapter.LogLevel.FULL).setLog(new RestAdapter.Log() {
+                public void log(String msg) {
+                    Log.i("Retrofit", msg);
                 }
             });
 
